@@ -23,6 +23,13 @@ def save_grid(request):
             width = form.cleaned_data['width']
             height = form.cleaned_data['height']
 
+            if x < 0 or y < 0 or x + width > 800 or y + height > 600:
+                return render(request, 'grids/index.html', {
+                    'grids': Grid.objects.all(),
+                    'form': form,
+                    'error': 'Grid exceeds floorplan boundaries!'
+                })
+
             if is_overlapping(x, y, width, height):
                 return render(request, 'grids/index.html', {
                     'grids': Grid.objects.all(),

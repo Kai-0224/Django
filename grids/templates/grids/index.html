@@ -89,11 +89,20 @@
 
         document.addEventListener('mousemove', function(e) {
             if (isDragging && !isResizing) {
-                const rect = document.getElementById('floorplan').getBoundingClientRect();
-                const x = e.clientX - rect.left - offsetX;
-                const y = e.clientY - rect.top - offsetY;
+                const floor = document.getElementById('floorplan').getBoundingClientRect();
+                const boxWidth = parseInt(box.style.width);
+                const boxHeight = parseInt(box.style.height);
+
+                let x = e.clientX - floor.left - offsetX;
+                let y = e.clientY - floor.top - offsetY;
+
+                // 限制不超出 floorplan 邊界
+                x = Math.max(0, Math.min(x, floor.width - boxWidth));
+                y = Math.max(0, Math.min(y, floor.height - boxHeight));
+
                 box.style.left = x + 'px';
                 box.style.top = y + 'px';
+
             }
         });
 
@@ -138,10 +147,21 @@
 
             document.addEventListener('mousemove', function(e) {
                 if (isResizing) {
-                    const newWidth = Math.max(20, startWidth + (e.clientX - startX));
-                    const newHeight = Math.max(20, startHeight + (e.clientY - startY));
+                    const floor = document.getElementById('floorplan').getBoundingClientRect();
+                    const boxRect = box.getBoundingClientRect();
+                    const offsetLeft = boxRect.left - floor.left;
+                    const offsetTop = boxRect.top - floor.top;
+
+                    let newWidth = Math.max(20, startWidth + (e.clientX - startX));
+                    let newHeight = Math.max(20, startHeight + (e.clientY - startY));
+
+                    // 限制不要超出底圖
+                    newWidth = Math.min(newWidth, floor.width - offsetLeft);
+                    newHeight = Math.min(newHeight, floor.height - offsetTop);
+
                     box.style.width = newWidth + 'px';
                     box.style.height = newHeight + 'px';
+
                 }
             });
 
