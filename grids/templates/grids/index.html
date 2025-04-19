@@ -75,9 +75,9 @@
 
         const resizer = box.querySelector('.resizer');
 
-        // 拖曳邏輯
+        // Drag Logic
         box.addEventListener('mousedown', function(e) {
-            if (e.target === resizer) return;  // 避免縮放觸發拖曳
+            if (e.target === resizer) return;  // Avoid triggering dragging when zooming
 
             isDragging = true;
             offsetX = e.offsetX;
@@ -96,7 +96,7 @@
                 let x = e.clientX - floor.left - offsetX;
                 let y = e.clientY - floor.top - offsetY;
 
-                // 限制不超出 floorplan 邊界
+                // Limits not to exceed floorplan boundaries
                 x = Math.max(0, Math.min(x, floor.width - boxWidth));
                 y = Math.max(0, Math.min(y, floor.height - boxHeight));
 
@@ -112,11 +112,11 @@
                 box.style.zIndex = '';
 
                 if (checkOverlap(box)) {
-                    // 若重疊還原原位
+                    // If overlapped, put it back in place
                     box.style.left = originalX + 'px';
                     box.style.top = originalY + 'px';
                 } else {
-                    // 不重疊則送出更新
+                    // Send update if no overlap
                     const id = box.getAttribute('data-id');
                     const newX = parseInt(box.style.left);
                     const newY = parseInt(box.style.top);
@@ -133,7 +133,7 @@
             }
         });
 
-        // 縮放邏輯
+        // Scaling logic
         if (resizer) {
             resizer.addEventListener('mousedown', function(e) {
                 e.stopPropagation();
@@ -155,7 +155,7 @@
                     let newWidth = Math.max(20, startWidth + (e.clientX - startX));
                     let newHeight = Math.max(20, startHeight + (e.clientY - startY));
 
-                    // 限制不要超出底圖
+                    // Limit not to exceed the background img
                     newWidth = Math.min(newWidth, floor.width - offsetLeft);
                     newHeight = Math.min(newHeight, floor.height - offsetTop);
 
@@ -170,11 +170,11 @@
                     isResizing = false;
 
                     if (checkOverlap(box)) {
-                        // 若重疊還原原始寬高
+                        // If overlapped, restore the original width and height
                         box.style.width = startWidth + 'px';
                         box.style.height = startHeight + 'px';
                     } else {
-                        // 更新尺寸
+                        // Update size
                         const id = box.getAttribute('data-id');
                         const width = parseInt(box.style.width);
                         const height = parseInt(box.style.height);
@@ -192,7 +192,7 @@
             });
         }
 
-        // 點選選取
+        // Click to select
         box.addEventListener('click', function(e) {
             e.stopPropagation();
             document.querySelectorAll('.grid-box').forEach(b => b.classList.remove('selected'));
@@ -202,7 +202,7 @@
         });
     });
 
-    // 點擊空白取消選取
+    // Click on the blank space to deselect
     document.addEventListener('click', function() {
         if (selectedBox) {
             selectedBox.classList.remove('selected');
@@ -211,7 +211,7 @@
         }
     });
 
-    // 刪除選取格子
+    // Delete selected grid-box
     document.getElementById('delete-btn').addEventListener('click', function() {
         if (selectedBoxId) {
             fetch(`/api/delete/${selectedBoxId}/`, {
@@ -225,7 +225,7 @@
         }
     });
 
-    // 判斷重疊
+    // Overlap judgment
     function checkOverlap(currentBox) {
         const boxes = document.querySelectorAll('.grid-box');
         const currRect = currentBox.getBoundingClientRect();
