@@ -1,0 +1,227 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Grid Editor</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+        #floorplan {
+            position: relative;
+            background-image: url("{% static 'image001.png' %}");
+            background-size: contain;
+            background-repeat: no-repeat;
+            width: 800px;
+            height: 600px;
+            border: 1px solid #ccc;
+        }
+        .grid-box {
+            position: absolute;
+            border: 2px solid red;
+            background-color: rgba(255, 0, 0, 0.3);
+            cursor: move;
+            min-width: 20px;
+            min-height: 20px;
+        }
+        .grid-box .resizer {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            right: 0;
+            bottom: 0;
+            background: blue;
+            cursor: se-resize;
+        }
+        .selected {
+            border: 2px dashed blue !important;
+            background-color: rgba(0, 0, 255, 0.3) !important;
+        }
+
+    </style>
+</head>
+<body>
+    <h2>Floor Plan Grid Editor</h2>
+    <div id="floorplan" style="background-image: url('{% static "image001.png" %}');">
+        {% for grid in grids %}
+        <div class="grid-box"
+             data-id="{{ grid.id }}"
+             style="left: {{ grid.x }}px; top: {{ grid.y }}px; width: {{ grid.width }}px; height: {{ grid.height }}px;">
+            <div class="resizer"></div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h3>Add Grid</h3>
+    <form method="post" action="{% url 'save_grid' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Add Grid</button>
+    </form>
+    
+    <h3>Delete Grid</h3>
+    <button id="delete-btn">Delete Selected Grid</button>
+
+    <script>
+    let selectedBox = null;
+    let selectedBoxId = null;
+
+    document.querySelectorAll('.grid-box').forEach(function(box) {
+        let offsetX, offsetY;
+        let isDragging = false;
+        let isResizing = false;
+        let startX, startY, startWidth, startHeight;
+        let originalX, originalY;
+
+        const resizer = box.querySelector('.resizer');
+
+        // 拖曳邏輯
+        box.addEventListener('mousedown', function(e) {
+            if (e.target === resizer) return;  // 避免縮放觸發拖曳
+
+            isDragging = true;
+            offsetX = e.offsetX;
+            offsetY = e.offsetY;
+            originalX = parseInt(box.style.left);
+            originalY = parseInt(box.style.top);
+            box.style.zIndex = 1000;
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging && !isResizing) {
+                const rect = document.getElementById('floorplan').getBoundingClientRect();
+                const x = e.clientX - rect.left - offsetX;
+                const y = e.clientY - rect.top - offsetY;
+                box.style.left = x + 'px';
+                box.style.top = y + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', function(e) {
+            if (isDragging && !isResizing) {
+                isDragging = false;
+                box.style.zIndex = '';
+
+                if (checkOverlap(box)) {
+                    // 若重疊還原原位
+                    box.style.left = originalX + 'px';
+                    box.style.top = originalY + 'px';
+                } else {
+                    // 不重疊則送出更新
+                    const id = box.getAttribute('data-id');
+                    const newX = parseInt(box.style.left);
+                    const newY = parseInt(box.style.top);
+
+                    fetch(`/api/update/${id}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ x: newX, y: newY })
+                    });
+                }
+            }
+        });
+
+        // 縮放邏輯
+        if (resizer) {
+            resizer.addEventListener('mousedown', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                isResizing = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = parseInt(getComputedStyle(box).width);
+                startHeight = parseInt(getComputedStyle(box).height);
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (isResizing) {
+                    const newWidth = Math.max(20, startWidth + (e.clientX - startX));
+                    const newHeight = Math.max(20, startHeight + (e.clientY - startY));
+                    box.style.width = newWidth + 'px';
+                    box.style.height = newHeight + 'px';
+                }
+            });
+
+            document.addEventListener('mouseup', function(e) {
+                if (isResizing) {
+                    isResizing = false;
+
+                    if (checkOverlap(box)) {
+                        // 若重疊還原原始寬高
+                        box.style.width = startWidth + 'px';
+                        box.style.height = startHeight + 'px';
+                    } else {
+                        // 更新尺寸
+                        const id = box.getAttribute('data-id');
+                        const width = parseInt(box.style.width);
+                        const height = parseInt(box.style.height);
+
+                        fetch(`/api/update/${id}/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({ width: width, height: height })
+                        });
+                    }
+                }
+            });
+        }
+
+        // 點選選取
+        box.addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.querySelectorAll('.grid-box').forEach(b => b.classList.remove('selected'));
+            box.classList.add('selected');
+            selectedBox = box;
+            selectedBoxId = box.getAttribute('data-id');
+        });
+    });
+
+    // 點擊空白取消選取
+    document.addEventListener('click', function() {
+        if (selectedBox) {
+            selectedBox.classList.remove('selected');
+            selectedBox = null;
+            selectedBoxId = null;
+        }
+    });
+
+    // 刪除選取格子
+    document.getElementById('delete-btn').addEventListener('click', function() {
+        if (selectedBoxId) {
+            fetch(`/api/delete/${selectedBoxId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                }
+            }).then(() => {
+                location.reload();
+            });
+        }
+    });
+
+    // 判斷重疊
+    function checkOverlap(currentBox) {
+        const boxes = document.querySelectorAll('.grid-box');
+        const currRect = currentBox.getBoundingClientRect();
+
+        for (let box of boxes) {
+            if (box === currentBox) continue;
+            const rect = box.getBoundingClientRect();
+            const overlap = !(currRect.right <= rect.left ||
+                              currRect.left >= rect.right ||
+                              currRect.bottom <= rect.top ||
+                              currRect.top >= rect.bottom);
+            if (overlap) return true;
+        }
+        return false;
+    }
+    </script>
+</body>
+</html>
+
