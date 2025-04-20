@@ -22,9 +22,6 @@ cd floorplan_project
 conda create -n floorplanenv python=3.10
 conda activate floorplanenv
 
-# Install dependencies
-pip install -r requirements.txt
-
 # Run migrations and start server
 python manage.py migrate
 python manage.py runserver
