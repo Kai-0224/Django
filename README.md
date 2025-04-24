@@ -25,3 +25,26 @@ conda activate floorplanenv
 # Run migrations and start server
 python manage.py migrate
 python manage.py runserver
+
+## Project Structure:
+floorplan_project/
+│
+├── config/                  # Project configuration and startup settings
+│   ├── __init__.py
+│   ├── settings.py          # Django settings (database, static files, installed apps, etc.)
+│   ├── urls.py              # Global URL routing configuration
+│   └── wsgi.py              # WSGI entry point for deployment
+│
+├── grids/                   # App: handles grid logic and frontend interaction
+│   ├── __init__.py
+│   ├── models.py            # Grid data model (x, y, width, height)
+│   ├── views.py             # View logic: load page, save grids, update position/size, delete grids
+│   ├── forms.py             # Form handling (for creating new grids)
+│   ├── urls.py              # App-specific URL routing
+│   └── templates/grids/index.html   # Main frontend HTML template
+│
+├── static/                  # Static resources
+│   └── image001.png         # Background floor plan image
+│
+├── db.sqlite3               # SQLite database file (stores grid information)
+└── manage.py                # Django management command entry point (e.g., runserver, migrate)
