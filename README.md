@@ -25,8 +25,10 @@ conda activate floorplanenv
 # Run migrations and start server
 python manage.py migrate
 python manage.py runserver
+```
 
 ## Project Structure:
+```text
 floorplan_project/
 │
 ├── config/                  # Project configuration and startup settings
@@ -48,3 +50,4 @@ floorplan_project/
 │
 ├── db.sqlite3               # SQLite database file (stores grid information)
 └── manage.py                # Django management command entry point (e.g., runserver, migrate)
+```
