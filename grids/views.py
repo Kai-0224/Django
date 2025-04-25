@@ -75,6 +75,8 @@ def delete_grid(request, grid_id):
 
 def is_overlapping(new_x, new_y, new_w, new_h, exclude_id=None):
     from django.db.models import Q
+    if Grid.objects.count() == 0:
+        return False
     overlapping_grids = Grid.objects.exclude(id=exclude_id).filter(
         Q(x__lt=new_x + new_w) & Q(x__gte=new_x - Grid.objects.values('width').first()['width']) &
         Q(y__lt=new_y + new_h) & Q(y__gte=new_y - Grid.objects.values('height').first()['height'])
